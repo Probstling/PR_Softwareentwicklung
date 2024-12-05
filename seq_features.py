@@ -2,13 +2,16 @@ from Bio import SeqIO
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
+import matplotlib.ticker as ticker
+
 
 # Length of entire transcript
 def length():
     array_length = []
     sequences = SeqIO.parse('ref_transcript_IDs.fa', 'fasta')
     for record in sequences:
-        array_length.append(record.id.split('|')[6])
+        array_length.append(int(record.id.split('|')[6]))
     array_length_np = np.array(array_length)
     #print(len(array_length_np))
     return array_length_np
@@ -43,21 +46,78 @@ def threeprime():
     #print(len(array_threeprime_np))
     return array_threeprime_np
 
-#Plotting the length arrays
-def plot_length(array, title, xlabel):
-    plt.figure(figsize=(8, 5))
-    sns.histplot(array, kde=True, color="skyblue", bins=30)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel("Frequency")
-    plt.grid(True, linestyle='--', alpha=0.6)
-    plt.tight_layout()
+#Length of the coding sequence
+def cds_length():
+    array_cds_length = []
+    sequences = SeqIO.parse('ref_transcript_IDs.fa', 'fasta')
+    for record in sequences:
+        id_part = record.id.split('|')[7]
+        if id_part.startswith("CDS:"):
+            cds_range = id_part.split(':')[1]
+            cds_start, cds_end = map(int, cds_range.split('-'))
+            cds_length = cds_end - cds_start + 1
+            array_cds_length.append(cds_length)
+        else:
+            id_part = record.id.split('|')[8]
+            if id_part.startswith("CDS:"):
+                cds_range = id_part.split(':')[1]
+                cds_start, cds_end = map(int, cds_range.split('-'))
+                cds_length = cds_end - cds_start + 1
+                array_cds_length.append(cds_length)
+    array_cds_length_np = np.array(array_cds_length)
+    #print(len(array_cds_length_np))
+    return array_cds_length_np
+
+#Plotting the length arrays in a violin plot
+def violin_all_lengths(total, utr5, cds, utr3):
+    # Create category labels
+    total_labels = np.array(["Total"] * len(total))
+    utr5_labels = np.array(["5' UTR"] * len(utr5))
+    cds_labels = np.array(["CDS"] * len(cds))
+    utr3_labels = np.array(["3' UTR"] * len(utr3))
+
+    # Concatenate data and labels
+    all_lengths = np.concatenate([total, utr5, cds, utr3])
+    all_labels = np.concatenate([total_labels, utr5_labels, cds_labels, utr3_labels])
+
+    # Create a DataFrame
+    data = pd.DataFrame({"Region": all_labels, "Length (bp)": all_lengths})
+
+    # Function to remove outliers based on IQR
+    def remove_outliers(df, column):
+        Q1 = df[column].quantile(0.25)
+        Q3 = df[column].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+        return df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
+
+    # Get the number of data points before removing outliers
+    total_data_points = len(data)
+
+    # Remove outliers from each region
+    filtered_data = remove_outliers(data, "Length (bp)")
+
+    # Get the number of data points after removing outliers
+    filtered_data_points = len(filtered_data)
+
+    # Calculate the percentage of data excluded
+    excluded_percentage = ((total_data_points - filtered_data_points) / total_data_points) * 100
+
+    # Print the percentage of data excluded
+    print(f"Percentage of data excluded: {excluded_percentage:.2f}%")
+
+    # Plot
+    sns.violinplot(data = filtered_data, x="Region", y="Length (bp)", palette="muted")
+    plt.title("Violin Plot of Transcript Lengths by Region")
     plt.show()
 
 if __name__ == "__main__":
-   total_length = length()
-   utr5_length = fiveprime()
-   utr3_length = threeprime()
-   plot_length(total_length, "Distribution of Total Transcript Lengths", "Transcript Length (bp)")
-   #plot_length(utr5_length, "Distribution of 5' UTR Lengths", "5' UTR Length (bp)")
-   #plot_length(utr3_length, "Distribution of 3' UTR Lengths", "3' UTR Length (bp)")
+   total = length()
+   utr5 = fiveprime()
+   utr3 = threeprime()
+   cds = cds_length()
+   violin_all_lengths(total, utr5, cds, utr3)
+
+
+
