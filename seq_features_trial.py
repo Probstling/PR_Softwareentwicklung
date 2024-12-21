@@ -3,8 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-import matplotlib.ticker as ticker
-
 
 # Length of entire transcript
 def length():
