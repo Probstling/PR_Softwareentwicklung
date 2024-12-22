@@ -35,8 +35,337 @@
 <p>Add your content using <code class="docutils literal notranslate"><span class="pre">reStructuredText</span></code> syntax. See the
 <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html">reStructuredText</a>
 documentation for details.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>This project contains three main Python scripts:</p>
+<ul class="simple">
+<li><p><strong>extract.py</strong>: Extracts sequence specific properties and lists them in a pandas DataFrame.</p></li>
+<li><p><strong>figures.py</strong>: Creates violin plots from the extracted data.</p></li>
+<li><p><strong>features.py</strong>: Maps extracted features to the DataFrame and exports it as a CSV file.</p></li>
+</ul>
+</section>
+<section id="scripts">
+<h2>Scripts<a class="headerlink" href="#scripts" title="Link to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
 </div>
+</section>
+<section id="script-details">
+<h2>Script Details<a class="headerlink" href="#script-details" title="Link to this heading">¶</a></h2>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">“extract.py”</span><a class="headerlink" href="#id1" title="Link to this code">¶</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Filter Gencode Transcript IDs from MANE select.</span>
+
+<span class="sd">Creates a new fasta file as output.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">Bio</span> <span class="kn">import</span> <span class="n">SeqIO</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+
+<span class="k">def</span> <span class="nf">counting</span><span class="p">(</span><span class="n">fasta_file</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check total number of transcripts in fasta files.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        fasta_file (.fa): all transcripts before and after filtering</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sequences</span> <span class="o">=</span> <span class="n">SeqIO</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">fasta_file</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">)</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">:</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">count</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; records are in file &quot;</span> <span class="o">+</span> <span class="n">fasta_file</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">MANE_select_transcript_IDs</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract transcript entries from gencode matching MANE select.</span>
+
+<span class="sd">    All reference transcript IDs from MANE select are listed in an array.</span>
+<span class="sd">    Entries from Gencode fasta file are listed in a new fasta file</span>
+<span class="sd">    if they are listed in the MANE selection.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># extracting all transcript ID&#39;s from the MANE selection</span>
+    <span class="n">mane_select</span> <span class="o">=</span> <span class="s2">&quot;MANE.GRCh38.v1.4.summary.txt&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">mane_select</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mane</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">mane</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+
+    <span class="c1"># creating regular expression pattern for extracting transcript ID</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;ENST\d+\.\d+&quot;</span>
+    <span class="n">mane_ids</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+        <span class="n">transcript_ID</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+        <span class="n">mane_ids</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">transcript_ID</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mane_ids</span><span class="p">)</span><span class="w"> </span><span class="si">}</span><span class="s2"> IDs listed in MANE select.&quot;</span>
+      <span class="p">)</span>
+
+    <span class="c1"># Parsing through gencode fasta file</span>
+    <span class="n">gencode</span> <span class="o">=</span> <span class="s2">&quot;gencode.v47.pc_transcripts.fa&quot;</span>
+    <span class="n">sequences</span> <span class="o">=</span> <span class="n">SeqIO</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">gencode</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">)</span>
+    <span class="n">output_file</span> <span class="o">=</span> <span class="s2">&quot;ref_transcript_IDs.fa&quot;</span>
+
+    <span class="c1"># writing selection into a new fasta file</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">:</span>
+            <span class="n">transcript_ID</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">transcript_ID</span> <span class="ow">in</span> <span class="n">mane_ids</span><span class="p">:</span>
+                <span class="n">SeqIO</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main script execution.</span>
+<span class="sd">    Counts before and after filtering.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">counting</span><span class="p">(</span><span class="s2">&quot;gencode.v47.pc_transcripts.fa&quot;</span><span class="p">)</span>
+    <span class="n">MANE_select_transcript_IDs</span><span class="p">()</span>
+    <span class="n">counting</span><span class="p">(</span><span class="s2">&quot;ref_transcript_IDs.fa&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">“figures.py”</span><a class="headerlink" href="#id2" title="Link to this code">¶</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This script is generating violin plots from transcript data.</span>
+
+<span class="sd">It includes:</span>
+<span class="sd">- A function to create a violin plot for transcript lengths.</span>
+<span class="sd">- A function to remove outliers based on the interquartile range.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+
+<span class="k">def</span> <span class="nf">violinplot_length</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">lengths</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a violin plot for specified transcript length regions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dataframe (pandas.DataFrame): contains properties</span>
+<span class="sd">        columns_to_plot (list of str): List of column names to plot.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None: The function displays the plot but does not return any value.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dataframe</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="n">lengths</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;N/A&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">NA</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Convert columns to numeric, ignoring errors (e.g., N/A)</span>
+    <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+        <span class="n">dataframe</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">dataframe</span><span class="p">[</span><span class="n">column</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;coerce&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Melt the DataFrame into long format for plotting</span>
+    <span class="n">melted_df</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span>
+        <span class="n">id_vars</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Transcript ID&quot;</span><span class="p">],</span> <span class="n">var_name</span><span class="o">=</span><span class="s2">&quot;Region&quot;</span><span class="p">,</span> <span class="n">value_name</span><span class="o">=</span><span class="s2">&quot;Length (bp)&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">melted_df</span> <span class="o">=</span> <span class="n">melted_df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span>
+        <span class="s2">&quot;Region&quot;</span><span class="p">,</span> <span class="n">group_keys</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">remove_outliers</span><span class="p">)</span>
+    <span class="n">custom_order</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;Total Length&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5&#39; UTR Length&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;CDS Length&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;3&#39; UTR Length&quot;</span>
+    <span class="p">]</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+    <span class="n">sns</span><span class="o">.</span><span class="n">violinplot</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">melted_df</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="s2">&quot;Region&quot;</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="s2">&quot;Length (bp)&quot;</span><span class="p">,</span>
+        <span class="n">palette</span><span class="o">=</span><span class="s2">&quot;muted&quot;</span><span class="p">,</span>
+        <span class="n">order</span><span class="o">=</span><span class="n">custom_order</span>
+    <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Transcript Length Distribution by Region&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Region&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Length (bp)&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">remove_outliers</span><span class="p">(</span><span class="n">group</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Remove outliers from a DataFrame group based on the interquartile range.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        group (pandas.DataFrame): Data grouped by a column, such as &#39;Region&#39;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        pandas.DataFrame: The filtered group with outliers removed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">Q1</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;Length (bp)&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.25</span><span class="p">)</span>
+    <span class="n">Q3</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;Length (bp)&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.75</span><span class="p">)</span>
+    <span class="n">IQR</span> <span class="o">=</span> <span class="n">Q3</span> <span class="o">-</span> <span class="n">Q1</span>
+    <span class="n">lower_bound</span> <span class="o">=</span> <span class="n">Q1</span> <span class="o">-</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">IQR</span>
+    <span class="n">upper_bound</span> <span class="o">=</span> <span class="n">Q3</span> <span class="o">+</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">IQR</span>
+    <span class="k">return</span> <span class="n">group</span><span class="p">[</span>
+        <span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;Length (bp)&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">lower_bound</span><span class="p">)</span>
+        <span class="o">&amp;</span> <span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;Length (bp)&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">upper_bound</span><span class="p">)</span>
+    <span class="p">]</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main script execution.</span>
+<span class="sd">    Reads CSV file as input and passes on</span>
+<span class="sd">    certain properties to create a plot.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">file_path</span> <span class="o">=</span> <span class="s2">&quot;output.csv&quot;</span>
+    <span class="n">dataframe</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+    <span class="n">lengths</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;Transcript ID&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Total Length&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;5&#39; UTR Length&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;CDS Length&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;3&#39; UTR Length&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">violinplot_length</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">lengths</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">“features.py”</span><a class="headerlink" href="#id3" title="Link to this code">¶</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Extract sequence-specific properties.</span>
+
+<span class="sd">Create a cvs file as output.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">Bio</span> <span class="kn">import</span> <span class="n">SeqIO</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<span class="k">def</span> <span class="nf">create_dataframe</span><span class="p">(</span><span class="n">fasta_file</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a pandas Dataframe from the reference transcript IDs.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        fasta_file (.fa): holds all reference Transcript IDs</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        dataframe: Transcript ID as identifier</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">transcript_ids</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fasta_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">SeqIO</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">):</span>
+            <span class="n">transcript_id</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">transcript_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">transcript_id</span><span class="p">)</span>
+
+    <span class="n">dataframe</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">transcript_ids</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Transcript ID&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">dataframe</span>
+
+
+<span class="c1"># Extract sequence specific properties:</span>
+<span class="k">def</span> <span class="nf">length</span><span class="p">(</span><span class="n">fasta_file</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract the length of four regions.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        fasta_file (.fa): holds all reference Transcript IDs</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        dictionary: Holds the lengths of all regions coupled to Transcript ID</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">properties</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fasta_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">SeqIO</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">file</span><span class="p">,</span> <span class="s2">&quot;fasta&quot;</span><span class="p">):</span>
+            <span class="n">transcript_id</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="c1"># Length of entire transcript</span>
+            <span class="n">total</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">)[</span><span class="mi">6</span><span class="p">])</span>
+
+            <span class="c1"># Length of 5&#39;UTR region</span>
+            <span class="n">utr5</span> <span class="o">=</span> <span class="s2">&quot;N/A&quot;</span>
+            <span class="k">if</span> <span class="s2">&quot;UTR5:&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                <span class="n">utr5_header</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;UTR5:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">utr5_header</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">))</span>
+                <span class="n">utr5</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="c1"># Length of CDS</span>
+            <span class="k">if</span> <span class="s2">&quot;CDS:&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                <span class="n">cds_header</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;CDS:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">cds_header</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">))</span>
+                <span class="n">cds</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="c1"># Length of 3&#39; UTR region</span>
+            <span class="n">utr3</span> <span class="o">=</span> <span class="s2">&quot;N/A&quot;</span>
+            <span class="k">if</span> <span class="s2">&quot;UTR3:&quot;</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                <span class="n">utr3_header</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;UTR3:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">utr3_header</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">))</span>
+                <span class="n">utr3</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="n">properties</span><span class="p">[</span><span class="n">transcript_id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;Total Length&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+                <span class="s2">&quot;5&#39; UTR Length&quot;</span><span class="p">:</span> <span class="n">utr5</span><span class="p">,</span>
+                <span class="s2">&quot;CDS Length&quot;</span><span class="p">:</span> <span class="n">cds</span><span class="p">,</span>
+                <span class="s2">&quot;3&#39; UTR Length&quot;</span><span class="p">:</span> <span class="n">utr3</span><span class="p">,</span>
+            <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">properties</span>
+
+
+<span class="k">def</span> <span class="nf">map_features</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">properties</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Map extracted properties to the DataFrame according to Transcript ID.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dataframe (pandas Dataframe): holds Transcript IDs as identifieres</span>
+<span class="sd">        properties (dictionary): holds properties coupled to transcript ID</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        dataframe: properties coupled to correct Transcript IDs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;Total Length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;Transcript ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">properties</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;Total Length&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">properties</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;5&#39; UTR Length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;Transcript ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">properties</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;5&#39; UTR Length&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">properties</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;CDS Length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;Transcript ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">properties</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;CDS Length&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">properties</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="p">)</span>
+    <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;3&#39; UTR Length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="p">[</span><span class="s2">&quot;Transcript ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span>
+        <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">properties</span><span class="p">[</span><span class="n">x</span><span class="p">][</span><span class="s2">&quot;3&#39; UTR Length&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">properties</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">dataframe</span>
+
+
+<span class="k">def</span> <span class="nf">export</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Export Dataframe to CSV file.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dataframe (pandas Dataframe): holds properties coupled to Transcript ID</span>
+<span class="sd">        output (csv file): lists properties to Transcript ID in a csv file</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DataFrame exportet to </span><span class="si">{</span><span class="n">output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># Call funcitons</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main script execution.</span>
+<span class="sd">    Extracts sequence specific features,</span>
+<span class="sd">    stores it in a pandas Dataframe</span>
+<span class="sd">    and creates a cvs file as output for further plotting.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="s2">&quot;ref_transcript_IDs.fa&quot;</span>
+    <span class="n">dataframe</span> <span class="o">=</span> <span class="n">create_dataframe</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+    <span class="n">properties</span> <span class="o">=</span> <span class="n">length</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
+    <span class="n">dataframe</span> <span class="o">=</span> <span class="n">map_features</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">properties</span><span class="p">)</span>
+    <span class="n">export</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="s2">&quot;output.csv&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
 </section>
 
 
