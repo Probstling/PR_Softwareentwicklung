@@ -45,7 +45,7 @@ def create_dataframe(fasta_file):
     transcript_id_map = {transcript_id: idx for idx, transcript_id in enumerate(transcript_ids)}
     
     # Initialize an array to store codon counts
-    codon_count_array = np.zeros((len(transcript_ids), len(codons)), dtype=int)
+    codon_count_array = np.zeros((len(transcript_ids), len(codons)), dtype=float)
     
     return transcript_id_map, codon_count_array, transcript_ids
 
@@ -75,6 +75,11 @@ def codon_profile(fasta_file):
                     if codon in codons:
                         codon_idx = codons.index(codon)
                         codon_count_array[transcript_idx, codon_idx] += 1
+                
+                # Normalize codon counts by sequence length
+                total_codons = len(cds_sequence)/3
+                codon_count_array[transcript_idx] /= total_codons
+                codon_count_array[transcript_idx] = codon_count_array[transcript_idx].round(4)
 
             if i % 1000 == 0:
                 print(f"Processed {i} sequences")

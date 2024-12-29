@@ -77,8 +77,91 @@ def remove_outliers(group):
     return group[
         (group.iloc[:, -1] >= lower_bound)
         & (group.iloc[:, -1] <= upper_bound)
-    ]
+    ]  
 
+
+def barplot(dataframe, title, y_label):
+    # Codon groups (example: mapping codons to their respective amino acids)
+    codon_groups = {
+        'Glycine': ["GGT", "GGC", "GGA", "GGG"],
+        'Alanine': ["GCT", "GCC", "GCA", "GCG"],
+        'Valine': ["GTT", "GTC", "GTA", "GTG"],
+        'Cysteine': ["TGT", "TGC"],
+        'Proline': ["CCT", "CCC", "CCA", "CCG"],
+        'Leucine': ["TTA", "TTG", "CTT", "CTC", "CTA", "CTG"],
+        'Isoleucine': ["ATT", "ATC", "ATA"],
+        'Methionine': ["ATG"],
+        'Tryptophan': ["TGG"],
+        'Phenylalanine': ["TTT", "TTC"],
+        'Serine': ["TCT", "TCC", "TCA", "TCG", "AGT", "AGC"],
+        'Threonine': ["ACT", "ACC", "ACA", "ACG"],
+        'Tyrosine': ["TAT", "TAC"],
+        'Asparagine': ["AAT", "AAC"],
+        'Glutamine': ["CAA", "CAG"],
+        'Lysine': ["AAA", "AAG"],
+        'Arginine': ["CGT", "CGC", "CGA", "CGG", "AGA", "AGG"],
+        'Histidine': ["CAT", "CAC"],
+        'Aspartic Acid': ["GAT", "GAC"],
+        'Glutamic Acid': ["GAA", "GAG"],
+        'Stop': ["TAA", "TAG", "TGA"]
+    }
+
+    # Collect codons from groups
+    codons = [codon for group in codon_groups.values() for codon in group]
+
+    # Select only the relevant columns (Transcript ID and codons)
+    dataframe = dataframe[["Transcript ID"] + codons]
+
+    # Calculate the mean and error SEM
+    codon_means = dataframe[codons].mean()
+    codon_errors = dataframe[codons].sem()
+
+    # Create DataFrame for plotting
+    plot_df = pd.DataFrame({
+        "Codon": codon_means.index,
+        y_label: codon_means.values,
+        "Error": codon_errors.values
+    })
+
+    # Assign amino acid group to each codon
+    plot_df['Amino Acid Group'] = plot_df['Codon'].apply(
+        lambda codon: next(group for group, codons in codon_groups.items() if codon in codons)
+    )
+
+    # Ensure Codon column is categorical with the specified order
+    plot_df["Codon"] = pd.Categorical(plot_df["Codon"], categories=codons, ordered=True)
+
+    # Plot using Seaborn with grouped colors
+    plt.figure(figsize=(16, 10))
+    ax = sns.barplot(
+        data=plot_df,
+        x="Codon",
+        y=y_label,
+        hue="Amino Acid Group",
+        ci=None,
+        palette="Set2",
+        dodge=False  # Single group columns
+    )
+
+    # Add error bars
+    for i, row in plot_df.iterrows():
+        ax.errorbar(
+            x=i, y=row[y_label], yerr=row["Error"], fmt='none', c='black', capsize=5
+        )
+
+    # Adjust legend and layout
+    plt.legend(
+        title="Amino Acid Group",
+        bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.
+    )
+
+    plt.title(title)
+    plt.xlabel("Codon")
+    plt.ylabel(y_label)
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.subplots_adjust(right=0.8, bottom=0.1)  # Add space for the legend
+    plt.show()
 
 if __name__ == "__main__":
     """
@@ -88,6 +171,8 @@ if __name__ == "__main__":
     """
     file_path = "output.csv"
     dataframe = pd.read_csv(file_path)
+    codon_profile = "codon_profile.csv"
+    codon_profile_df = pd.read_csv(codon_profile)
 
     lengths = [
         "Transcript ID",
@@ -118,4 +203,10 @@ if __name__ == "__main__":
         cg_contents,
         title="CG Content Distribution by Region",
         y_label="CG Content", 
+    )
+
+    barplot(
+        codon_profile_df,
+        title="Codon Frequency Distribution by Amino Acid",
+        y_label="Frequency (normalized)"
     )
