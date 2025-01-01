@@ -145,10 +145,10 @@ if __name__ == "__main__":
     input = "ref_transcript_IDs.fa"
 
     # Codon profile
-    #codon_profile_df = codon_profile(input)
-    #codon_output = "codon_profile.csv"
-    #codon_profile_df.to_csv(codon_output, index=False)
-    #print(f"Codon profile exported to {codon_output}")
+    codon_profile_df = codon_profile(input)
+    codon_output = "codon_profile.csv"
+    codon_profile_df.to_csv(codon_output, index=False)
+    print(f"Codon profile exported to {codon_output}")
 
     # Amino acid profile
     aa_profile_df = aa_profile(input)

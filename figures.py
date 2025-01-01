@@ -81,7 +81,7 @@ def remove_outliers(group):
 
 
 def barplot_codon(dataframe, title, y_label):
-    # Codon groups (example: mapping codons to their respective amino acids)
+
     codon_groups = {
         'Glycine': ["GGT", "GGC", "GGA", "GGG"],
         'Alanine': ["GCT", "GCC", "GCA", "GCG"],
@@ -164,18 +164,7 @@ def barplot_codon(dataframe, title, y_label):
     plt.show()
 
 
-def barplot_aa(aa_profile_df, title, y_label):
-
-    # Calculate the mean and standard error for amino acid frequencies
-    aa_means = aa_profile_df.groupby("Amino Acid")["Frequency"].mean()
-    aa_errors = aa_profile_df.groupby("Amino Acid")["Frequency"].sem()
-
-    # Create a DataFrame for plotting
-    aa_summary = pd.DataFrame({
-        "Amino Acid": aa_means.index,
-        y_label: aa_means.values,
-        "Error": aa_errors.values
-    })
+def barplot_aa(dataframe, title, y_label):
 
     # Convert one-letter amino acid codes to three-leter codes
     aa_mapping = {
@@ -184,8 +173,6 @@ def barplot_aa(aa_profile_df, title, y_label):
     'R': 'Arg', 'S': 'Ser', 'T': 'Thr', 'V': 'Val', 'W': 'Trp', 'Y': 'Tyr'
     }
 
-    aa_summary["Amino Acid"] = aa_summary["Amino Acid"].map(aa_mapping)
-
     aa_groups = {
         'Nonpolar': ["Gly", "Ala", "Val", "Cys", "Pro", "Leu", "Ile", "Met", "Trp", "Phe"],
         'Polar': ["Ser", "Thr", "Tyr", "Asn", "Gln"],
@@ -193,32 +180,64 @@ def barplot_aa(aa_profile_df, title, y_label):
         'Charged Negative': ["Asp", "Glu"]
     }
 
-    aa_order = [aa for group in aa_groups.values() for aa in group]
+    # Map columns to three-letter amino acid codes
+    dataframe.rename(columns=aa_mapping, inplace=True)
 
-    # Ensure the amino acids are ordered as per aa_order
-    aa_summary["Amino Acid"] = pd.Categorical(aa_summary["Amino Acid"], categories=aa_order, ordered=True)
-    
-    #sns.set_theme(style="whitegrid")
-    plt.figure(figsize=(10,6))
-    ax = sns.barplot(
-        data=aa_summary,
-        x="Amino Acid",
-        y=y_label,
-        order = aa_order,
-        color='skyblue'
+    # Collect amino acids from groups
+    amino_acids = [aa for group in aa_groups.values() for aa in group]
+
+    # Select only the relevant columns (Transcript ID and amino acids)
+    dataframe = dataframe[["Transcript ID"] + amino_acids]
+
+    # Calculate the mean and error SEM
+    aa_means = dataframe[amino_acids].mean()
+    aa_errors = dataframe[amino_acids].sem()
+
+    # Create DataFrame for plotting
+    plot_df = pd.DataFrame({
+        "Amino Acid": aa_means.index,
+        y_label: aa_means.values,
+        "Error": aa_errors.values
+    })
+
+    # Assign amino acid group to each amino acid
+    plot_df['Amino Acid Group'] = plot_df['Amino Acid'].apply(
+        lambda aa: next(group for group, aas in aa_groups.items() if aa in aas)
     )
 
-    # Add error bars manually
-    for i, row in aa_summary.iterrows():
+    # Ensure Amino Acid column is categorical with the specified order
+    plot_df["Amino Acid"] = pd.Categorical(plot_df["Amino Acid"], categories=amino_acids, ordered=True)
+
+    # Plot using Seaborn with grouped colors
+    plt.figure(figsize=(12, 8))
+    ax = sns.barplot(
+        data=plot_df,
+        x="Amino Acid",
+        y=y_label,
+        hue="Amino Acid Group",
+        ci=None,
+        palette="Set2",
+        dodge=False  # Single group columns
+    )
+
+    # Add error bars
+    for i, row in plot_df.iterrows():
         ax.errorbar(
-            x=i, y=row["Frequency"], yerr=row["StdError"], fmt='none', c='black', capsize=5
+            x=i, y=row[y_label], yerr=row["Error"], fmt='none', c='black', capsize=5
         )
 
-    plt.xlabel("Amino Acid", fontsize=12)
-    plt.ylabel(y_label, fontsize=12)
-    plt.title(title, fontsize=14)
+    # Adjust legend and layout
+    plt.legend(
+        title="Amino Acid Group",
+        bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.
+    )
+
+    plt.title(title)
+    plt.xlabel("Amino Acid")
+    plt.ylabel(y_label)
     plt.xticks(rotation=45)
     plt.tight_layout()
+    plt.subplots_adjust(left=0.15, right=0.8, bottom=0.1) 
     plt.show()
 
 if __name__ == "__main__":
