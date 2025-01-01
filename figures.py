@@ -80,7 +80,7 @@ def remove_outliers(group):
     ]  
 
 
-def barplot(dataframe, title, y_label):
+def barplot_codon(dataframe, title, y_label):
     # Codon groups (example: mapping codons to their respective amino acids)
     codon_groups = {
         'Glycine': ["GGT", "GGC", "GGA", "GGG"],
@@ -163,50 +163,118 @@ def barplot(dataframe, title, y_label):
     plt.subplots_adjust(right=0.8, bottom=0.1)  # Add space for the legend
     plt.show()
 
+
+def barplot_aa(aa_profile_df, title, y_label):
+
+    # Calculate the mean and standard error for amino acid frequencies
+    aa_means = aa_profile_df.groupby("Amino Acid")["Frequency"].mean()
+    aa_errors = aa_profile_df.groupby("Amino Acid")["Frequency"].sem()
+
+    # Create a DataFrame for plotting
+    aa_summary = pd.DataFrame({
+        "Amino Acid": aa_means.index,
+        y_label: aa_means.values,
+        "Error": aa_errors.values
+    })
+
+    # Convert one-letter amino acid codes to three-leter codes
+    aa_mapping = {
+    'A': 'Ala', 'C': 'Cys', 'D': 'Asp', 'E': 'Glu', 'F': 'Phe', 'G': 'Gly', 'H': 'His',
+    'I': 'Ile', 'K': 'Lys', 'L': 'Leu', 'M': 'Met', 'N': 'Asn', 'P': 'Pro', 'Q': 'Gln',
+    'R': 'Arg', 'S': 'Ser', 'T': 'Thr', 'V': 'Val', 'W': 'Trp', 'Y': 'Tyr'
+    }
+
+    aa_summary["Amino Acid"] = aa_summary["Amino Acid"].map(aa_mapping)
+
+    aa_groups = {
+        'Nonpolar': ["Gly", "Ala", "Val", "Cys", "Pro", "Leu", "Ile", "Met", "Trp", "Phe"],
+        'Polar': ["Ser", "Thr", "Tyr", "Asn", "Gln"],
+        'Charged Positive': ["Lys", "Arg", "His"],
+        'Charged Negative': ["Asp", "Glu"]
+    }
+
+    aa_order = [aa for group in aa_groups.values() for aa in group]
+
+    # Ensure the amino acids are ordered as per aa_order
+    aa_summary["Amino Acid"] = pd.Categorical(aa_summary["Amino Acid"], categories=aa_order, ordered=True)
+    
+    #sns.set_theme(style="whitegrid")
+    plt.figure(figsize=(10,6))
+    ax = sns.barplot(
+        data=aa_summary,
+        x="Amino Acid",
+        y=y_label,
+        order = aa_order,
+        color='skyblue'
+    )
+
+    # Add error bars manually
+    for i, row in aa_summary.iterrows():
+        ax.errorbar(
+            x=i, y=row["Frequency"], yerr=row["StdError"], fmt='none', c='black', capsize=5
+        )
+
+    plt.xlabel("Amino Acid", fontsize=12)
+    plt.ylabel(y_label, fontsize=12)
+    plt.title(title, fontsize=14)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
 if __name__ == "__main__":
     """
     Main script execution.
     Reads CSV file as input and passes on
     certain properties to create a plot.
     """
-    file_path = "output.csv"
-    dataframe = pd.read_csv(file_path)
-    codon_profile = "codon_profile.csv"
-    codon_profile_df = pd.read_csv(codon_profile)
+    #file_path = "output.csv"
+    #dataframe = pd.read_csv(file_path)
 
-    lengths = [
-        "Transcript ID",
-        "Total Length",
-        "5' UTR Length",
-        "CDS Length",
-        "3' UTR Length",
-    ]
+    #codon_profile = "codon_profile.csv"
+    #codon_profile_df = pd.read_csv(codon_profile)
 
-    violinplot(
-        dataframe, 
-        lengths, 
-        title = "Transcription Length Distribution by Region", 
-        y_label = "Length (bp)",
-        remove_outliers_flag=True,
-    )
+    aa_profile = "aa_profile.csv"
+    aa_profile_df = pd.read_csv(aa_profile)
 
-    cg_contents = [
-        "Transcript ID",
-        "Total CG Content",
-        "5' UTR CG Content",
-        "CDS CG Content",
-        "3' UTR CG Content",
-    ]
+    #lengths = [
+    #    "Transcript ID",
+    #    "Total Length",
+    #    "5' UTR Length",
+    #    "CDS Length",
+    #    "3' UTR Length",
+    #]
 
-    violinplot(
-        dataframe,
-        cg_contents,
-        title="CG Content Distribution by Region",
-        y_label="CG Content", 
-    )
+    #violinplot(
+    #    dataframe, 
+    #    lengths, 
+    #    title = "Transcription Length Distribution by Region", 
+    #    y_label = "Length (bp)",
+    #    remove_outliers_flag=True,
+    #)
 
-    barplot(
-        codon_profile_df,
-        title="Codon Frequency Distribution by Amino Acid",
-        y_label="Frequency (normalized)"
+    #cg_contents = [
+    #    "Transcript ID",
+    #    "Total CG Content",
+    #    "5' UTR CG Content",
+    #    "CDS CG Content",
+    #    "3' UTR CG Content",
+    #]
+
+    #violinplot(
+    #    dataframe,
+    #    cg_contents,
+    #    title="CG Content Distribution by Region",
+    #    y_label="CG Content", 
+    #)
+
+    #barplot_codon(
+    #    codon_profile_df,
+    #    title="Codon Frequency Distribution by Amino Acid",
+    #    y_label="Frequency (normalized)",
+    #)
+
+    barplot_aa(
+        aa_profile_df,
+        title = "Amino Acid Frequency Profile",
+        y_label = "Frequency (normalized)",
     )
